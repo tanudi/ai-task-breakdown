@@ -48,4 +48,4 @@ Open [http://localhost:5173](http://localhost:5173).
 
 ## Live demo
 
-[LIVE_URL]
+https://task-breakdown-one.vercel.app/
