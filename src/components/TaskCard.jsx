@@ -1,6 +1,6 @@
 const COMPLEXITY_CLASS = { low: 'badge--low', medium: 'badge--medium', high: 'badge--high' };
 
-export default function TaskCard({ task, index }) {
+export default function TaskCard({ task, index, dependsOn }) {
   const estimate = task.estimate ?? task.estimatedTime;
 
   return (
@@ -24,6 +24,15 @@ export default function TaskCard({ task, index }) {
             </li>
           ))}
         </ul>
+      )}
+      {dependsOn?.length > 0 && (
+        <div>
+          {dependsOn.map((d, i) => (
+            <p key={i} style={{ fontSize: '0.8rem', color: '#b45309', margin: '6px 0 0' }}>
+              ⚠ Requires: {d}
+            </p>
+          ))}
+        </div>
       )}
       {estimate && (
         <p className="task-estimate">

@@ -71,6 +71,36 @@ function estimateComplexity(taskCount, hasAuthentication, hasDatabase) {
   return { score: total, level, recommendation };
 }
 
+// ── Dependency analyser ────────────────────────────────────────────────────
+
+async function analyzeDependencies(headers, tasks) {
+  const taskTitles = tasks.map((t) => t.title).join(', ');
+  const data = await callAPI(headers, {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1024,
+    messages: [
+      {
+        role: 'user',
+        content:
+          `Given these tasks: ${taskTitles}, identify which tasks depend on other tasks being completed first. ` +
+          'Return JSON only in this format:\n' +
+          '{\n' +
+          '  "dependencies": [\n' +
+          '    { "task": "task title", "dependsOn": ["other task title"] }\n' +
+          '  ]\n' +
+          '}\n' +
+          'If a task has no dependencies, omit it from the array.',
+      },
+    ],
+  });
+  const text = data.content?.find((b) => b.type === 'text')?.text ?? '';
+  try {
+    return parseJSON(text).dependencies ?? [];
+  } catch {
+    return [];
+  }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function buildHeaders(apiKey) {
@@ -152,7 +182,9 @@ export async function getTaskBreakdown(description, language) {
   if (!toolUseBlock) {
     // Claude chose not to call the tool — parse and return the text directly
     const text = firstData.content?.find((b) => b.type === 'text')?.text ?? '';
-    return parseJSON(text);
+    const breakdown = parseJSON(text);
+    const dependencies = await analyzeDependencies(headers, breakdown.tasks);
+    return { ...breakdown, dependencies };
   }
 
   // ── Step 3: run the local scorer with Claude's chosen arguments ─────────
@@ -196,5 +228,9 @@ export async function getTaskBreakdown(description, language) {
   const finalText = secondData.content?.find((b) => b.type === 'text')?.text ?? '';
   const breakdown = parseJSON(finalText);
 
-  return { ...breakdown, complexity };
+  // ── Step 6: third call — identify dependencies between tasks ────────────
+
+  const dependencies = await analyzeDependencies(headers, breakdown.tasks);
+
+  return { ...breakdown, complexity, dependencies };
 }

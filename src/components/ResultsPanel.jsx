@@ -58,9 +58,10 @@ export default function ResultsPanel({ result, isLoading, hasSubmitted, error })
       </div>
 
       <div className="task-list">
-        {result.tasks.map((task, i) => (
-          <TaskCard key={i} task={task} index={i} />
-        ))}
+        {result.tasks.map((task, i) => {
+          const dep = result.dependencies?.find((d) => d.task === task.title);
+          return <TaskCard key={i} task={task} index={i} dependsOn={dep?.dependsOn} />;
+        })}
       </div>
 
       <p className="results-footer">
